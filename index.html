@@ -1,161 +1,926 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Are You Mark's?</title>
-  <style>
-    :root {
-      --primary: #fcb900;
-      --background: #111;
-      --text: #fff;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background-color: var(--background);
-      font-family: 'Segoe UI', sans-serif;
-      color: var(--text);
-    }
-
-    .centered {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 20px;
-      height: 100%;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 20px;
-    }
-
-    input {
-      padding: 12px;
-      margin: 10px;
-      font-size: 16px;
-      border-radius: 5px;
-      border: none;
-      width: 80%;
-      max-width: 300px;
-    }
-
-    button {
-      margin-top: 20px;
-      padding: 12px 24px;
-      font-size: 18px;
-      background: var(--primary);
-      color: #000;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-
-    button:hover {
-      background: #ffcc00;
-    }
-
-    #videoContainer, #menu {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: black;
-      z-index: 10;
-      justify-content: center;
-      align-items: center;
-    }
-
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    #menu {
-      z-index: 20;
-      background: rgba(0, 0, 0, 0.85);
-      flex-direction: column;
-    }
-
-    #menu h2 {
-      font-size: 2rem;
-      margin-bottom: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivBuilder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        #game-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .resource, .worker, .building, .upgrade, .action {
+            margin: 10px 0;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .alert {
+            color: red;
+            display: none;
+            margin-top: 10px;
+        }
+        #raidAlert {
+            color: orange;
+            display: none;
+            margin-top: 10px;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #ccc;
+        }
+        .tabcontent {
+            display: none;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
+    <div id="game-container">
+        <h1>CivBuilder</h1>
+        <div class="section" id="resources">
+            <h2>Resources</h2>
+            <div class="resource">Food: <span id="food">0</span> (<span id="foodRate">0</span>/s)</div>
+            <div class="resource">Wood: <span id="wood">0</span></div>
+            <div class="resource">Stone: <span id="stone">0</span></div>
+            <div class="resource">Skins: <span id="skins">0</span></div>
+            <div class="resource">Leather: <span id="leather">0</span></div>
+            <div class="resource">Bodies: <span id="bodies">0</span></div>
+            <div class="resource">Undocumented Immigrants: <span id="undocumentedImmigrants">0</span></div>
+            <div class="resource">Happiness: <span id="happiness">50</span></div>
+            <div class="resource">Community: <span id="community">50</span></div>
+            <div class="resource">Approval: <span id="approval">50</span></div>
+            <button onclick="gatherResource('food')">Gather Food</button>
+            <button onclick="gatherResource('wood')">Gather Wood</button>
+            <button onclick="gatherResource('stone')">Gather Stone</button>
+            <button onclick="buryBodies()">Bury Bodies (5 Wood)</button>
+            <button onclick="toggleEnforcement()">Enforcement Actions</button>
+            <button onclick="toggleDemographics()">Demographics</button>
+            <button onclick="toggleLegislation()">Legislation</button>
+            <button onclick="toggleUpgrades()">Upgrades</button>
+            <div id="starvationAlert" class="alert">Starvation! A worker has died due to lack of food.</div>
+            <div id="raidAlert" class="alert">Raid Outcome: </div>
+        </div>
+        <div class="section" id="workers">
+            <h2>Workers</h2>
+            <div class="worker">Population: <span id="population">0</span> / <span id="maxPopulation">0</span></div>
+            <div class="worker">Farmers: <span id="farmers">0</span> <button onclick="hireWorker('farmer')">Hire Farmer (20 Food)</button></div>
+            <div class="worker">Woodcutters: <span id="woodcutters">0</span> <button onclick="hireWorker('woodcutter')">Hire Woodcutter (20 Food)</button></div>
+            <div class="worker">Miners: <span id="miners">0</span> <button onclick="hireWorker('miner')">Hire Miner (20 Food)</button></div>
+            <div class="worker">ICE Agents: <span id="iceAgents">0</span> <button onclick="hireWorker('ICEAgent')">Hire ICE Agent (50 Food)</button></div>
+        </div>
+        <div class="section" id="buildings">
+            <h2>Buildings</h2>
+            <div class="building">Tents: <span id="tents">0</span> <button onclick="build('tent')">Build Tent (5 Wood, 5 Skins)</button></div>
+        </div>
+        <div class="section" id="upgrades-section" style="display: none;">
+            <h2>Upgrades</h2>
+            <div class="upgrade" id="upgrade-domestication" style="display: none;">
+                Domestication: <button onclick="buyUpgrade('domestication')">Buy (20 Leather)</button> - Doubles farmer efficiency. Side effect: +5 happiness for all ages.
+            </div>
+            <div class="upgrade" id="upgrade-farmingTools" style="display: none;">
+                Farming Tools: <button onclick="buyUpgrade('farmingTools')">Buy (50 Wood)</button> - Increases farmer production by 0.5/s. Side effect: +5 community.
+            </div>
+            <div class="upgrade" id="upgrade-irrigationSystem" style="display: none;">
+                Irrigation System: <button onclick="buyUpgrade('irrigationSystem')">Buy (100 Stone)</button> - Increases farmer production by 1.0/s. Side effect: -5 approval from independents (environmental concerns).
+            </div>
+            <div class="upgrade" id="upgrade-cropRotation" style="display: none;">
+                Crop Rotation: <button onclick="buyUpgrade('cropRotation')">Buy (50 Leather)</button> - Increases farmer production by 0.5/s, +5 happiness. Side effect: +10 happiness for farmers (but since no farmer happiness, +5 for 0-17 age).
+            </div>
+            <div class="upgrade" id="upgrade-axesUpgrade" style="display: none;">
+                Axes Upgrade: <button onclick="buyUpgrade('axesUpgrade')">Buy (50 Stone)</button> - Increases woodcutter production by 0.5/s. Side effect: -5 community (deforestation).
+            </div>
+            <div class="upgrade" id="upgrade-sawUpgrade" style="display: none;">
+                Saw Upgrade: <button onclick="buyUpgrade('sawUpgrade')">Buy (100 Wood)</button> - Increases woodcutter production by 1.0/s. Side effect: +5 approval from republicans.
+            </div>
+            <div class="upgrade" id="upgrade-forestryManagement" style="display: none;">
+                Forestry Management: <button onclick="buyUpgrade('forestryManagement')">Buy (50 Leather)</button> - Increases woodcutter production by 0.5/s, +5 community. Side effect: +10 happiness for asians.
+            </div>
+            <div class="upgrade" id="upgrade-pickaxeUpgrade" style="display: none;">
+                Pickaxe Upgrade: <button onclick="buyUpgrade('pickaxeUpgrade')">Buy (50 Wood)</button> - Increases miner production by 0.5/s. Side effect: -5 happiness for 65+ (noise pollution).
+            </div>
+            <div class="upgrade" id="upgrade-drillingTools" style="display: none;">
+                Drilling Tools: <button onclick="buyUpgrade('drillingTools')">Buy (100 Stone)</button> - Increases miner production by 1.0/s. Side effect: +5 approval from democrats.
+            </div>
+            <div class="upgrade" id="upgrade-miningSafety" style="display: none;">
+                Mining Safety: <button onclick="buyUpgrade('miningSafety')">Buy (50 Leather)</button> - Increases miner production by 0.5/s, +5 happiness. Side effect: +10 community.
+            </div>
+            <div class="upgrade" id="upgrade-tentReinforcement" style="display: none;">
+                Tent Reinforcement: <button onclick="buyUpgrade('tentReinforcement')">Buy (20 Skins)</button> - Tents provide +1 additional population slot. Side effect: +5 happiness for hispanics.
+            </div>
+            <div class="upgrade" id="upgrade-woodenHouses" style="display: none;">
+                Wooden Houses: <button onclick="buyUpgrade('woodenHouses')">Buy (200 Wood)</button> - Tents provide +2 additional population slots. Side effect: -5 approval from independents.
+            </div>
+            <div class="upgrade" id="upgrade-stoneHouses" style="display: none;">
+                Stone Houses: <button onclick="buyUpgrade('stoneHouses')">Buy (300 Stone)</button> - Tents provide +3 additional population slots. Side effect: +10 happiness for blacks.
+            </div>
+            <div class="upgrade" id="upgrade-iceTraining" style="display: none;">
+                ICE Training: <button onclick="buyUpgrade('iceTraining')">Buy (100 Food)</button> - Increases raid success rate by 10%. Side effect: -10 happiness for democrats.
+            </div>
+            <div class="upgrade" id="upgrade-iceEquipment" style="display: none;">
+                ICE Equipment: <button onclick="buyUpgrade('iceEquipment')">Buy (200 Stone)</button> - Reduces raid failure risk by 5%. Side effect: +5 approval from republicans.
+            </div>
+            <div class="upgrade" id="upgrade-borderWatch" style="display: none;">
+                Border Watch: <button onclick="buyUpgrade('borderWatch')">Buy (100 Wood)</button> - Reduces immigrant arrival chance by 20%. Side effect: -5 community.
+            </div>
+            <div class="upgrade" id="upgrade-communityCenters" style="display: none;">
+                Community Centers: <button onclick="buyUpgrade('communityCenters')">Buy (100 Stone)</button> - Increases happiness by 10, community by 10. Side effect: +10 approval from independents.
+            </div>
+            <div class="upgrade" id="upgrade-educationSystem" style="display: none;">
+                Education System: <button onclick="buyUpgrade('educationSystem')">Buy (200 Food)</button> - Increases all production by 10%. Side effect: +15 happiness for 18-34 age group.
+            </div>
+            <div class="upgrade" id="upgrade-healthcare" style="display: none;">
+                Healthcare: <button onclick="buyUpgrade('healthcare')">Buy (300 Food)</button> - Reduces starvation risk, increases happiness by 15. Side effect: +10 approval from democrats.
+            </div>
+            <div class="upgrade" id="upgrade-tradeRoutes" style="display: none;">
+                Trade Routes: <button onclick="buyUpgrade('tradeRoutes')">Buy (200 Wood)</button> - Occasionally gains extra resources. Side effect: +5 community, -5 happiness for republicans (trade concerns).
+            </div>
+            <!-- New upgrades -->
+            <div class="upgrade" id="upgrade-borderWall" style="display: none;">
+                Border Wall: <button onclick="buyUpgrade('borderWall')">Buy (500 Stone)</button> - Reduces immigrant arrival chance by 50%. Side effect: +10 approval from republicans, -10 happiness from hispanics.
+            </div>
+            <div class="upgrade" id="upgrade-integrationProgram" style="display: none;">
+                Integration Program: <button onclick="buyUpgrade('integrationProgram')">Buy (300 Food)</button> - Reduces undocumented population over time. Side effect: +10 community, +5 happiness from democrats.
+            </div>
+            <div class="upgrade" id="upgrade-surveillanceTech" style="display: none;">
+                Surveillance Tech: <button onclick="buyUpgrade('surveillanceTech')">Buy (200 Wood)</button> - Increases raid success by 20%. Side effect: -10 happiness from independents (privacy issues).
+            </div>
+            <div class="upgrade" id="upgrade-culturalFestival" style="display: none;">
+                Cultural Festival: <button onclick="buyUpgrade('culturalFestival')">Buy (100 Leather)</button> - Increases happiness by 10 for all races. Side effect: +5 approval from all political groups.
+            </div>
+            <div class="upgrade" id="upgrade-laborReform" style="display: none;">
+                Labor Reform: <button onclick="buyUpgrade('laborReform')">Buy (400 Food)</button> - Increases all worker production by 20%. Side effect: -5 happiness from 55-64 age group (change resistance).
+            </div>
+        </div>
+        <div class="section" id="legislation-section" style="display: none;">
+            <h2>Legislative Actions</h2>
+            <div id="legislation-list"></div>
+        </div>
+        <div class="section" id="demographics-section" style="display: none;">
+            <h2>Demographics</h2>
+            <div id="demographics-content"></div>
+        </div>
+    </div>
+    <script>
+        // Game state
+        let gameState = {
+            resources: {
+                food: 0,
+                wood: 0,
+                stone: 0,
+                skins: 0,
+                leather: 0,
+                bodies: 0
+            },
+            workers: {
+                farmer: 0,
+                woodcutter: 0,
+                miner: 0,
+                ICEAgent: 0
+            },
+            undocumentedPopulation: 0,
+            buildings: {
+                tent: 0
+            },
+            upgrades: {
+                domestication: false,
+                farmingTools: false,
+                irrigationSystem: false,
+                cropRotation: false,
+                axesUpgrade: false,
+                sawUpgrade: false,
+                forestryManagement: false,
+                pickaxeUpgrade: false,
+                drillingTools: false,
+                miningSafety: false,
+                tentReinforcement: false,
+                woodenHouses: false,
+                stoneHouses: false,
+                iceTraining: false,
+                iceEquipment: false,
+                borderWatch: false,
+                communityCenters: false,
+                educationSystem: false,
+                healthcare: false,
+                tradeRoutes: false,
+                borderWall: false,
+                integrationProgram: false,
+                surveillanceTech: false,
+                culturalFestival: false,
+                laborReform: false
+            },
+            population: 0,
+            maxPopulation: 0,
+            raidCooldown: 0,
+            happiness: 50,
+            community: 50,
+            approval: 50,
+            borderStrength: 0,
+            happinessByPol: {
+                republican: 50,
+                democrat: 50,
+                independent: 50
+            },
+            approvalByPol: {
+                republican: 50,
+                democrat: 50,
+                independent: 50
+            },
+            happinessByRace: {
+                white: 50,
+                black: 50,
+                hispanic: 50,
+                asian: 50,
+                other: 50
+            },
+            happinessByAge: {
+                '0-17': 50,
+                '18-34': 50,
+                '35-54': 50,
+                '55-64': 50,
+                '65+': 50
+            },
+            demographics: {
+                race: {white: 0, black: 0, hispanic: 0, asian: 0, other: 0},
+                age: {'0-17': 0, '18-34': 0, '35-54': 0, '55-64': 0, '65+': 0},
+                political: {republican: 0, democrat: 0, independent: 0}
+            },
+            undocDemographics: {
+                race: {white: 0, black: 0, hispanic: 0, asian: 0, other: 0},
+                age: {'0-17': 0, '18-34': 0, '35-54': 0, '55-64': 0, '65+': 0},
+                political: {republican: 0, democrat: 0, independent: 0}
+            }
+        };
 
-  <!-- Form -->
-  <div class="centered" id="formContainer">
-    <h1>Are You Mark's?</h1>
-    <input id="first" placeholder="First Name" />
-    <input id="middle" placeholder="Middle Name" />
-    <input id="last" placeholder="Last Name" />
-    <button onclick="checkName()">Submit</button>
-  </div>
+        // Add dynamic button for tanning skins
+        let resourcesSection = document.getElementById('resources');
+        let tanButton = document.createElement('button');
+        tanButton.innerText = 'Tan Skins (5 Skins for 1 Leather)';
+        tanButton.onclick = function() {
+            if (gameState.resources.skins >= 5) {
+                gameState.resources.skins -= 5;
+                gameState.resources.leather += 1;
+            }
+        };
+        resourcesSection.appendChild(tanButton);
 
-  <!-- Video -->
-  <div id="videoContainer">
-    <video id="videoPlayer" autoplay muted playsinline>
-      <source id="videoSource" src="" type="video/mp4" />
-      Your browser does not support HTML5 video.
-    </video>
-  </div>
+        // Legislation list
+        let legislations = [
+            {
+                name: 'Strict Immigration Law',
+                cost: 50,
+                effect: function() {
+                    gameState.borderStrength += 0.5; // reduce arrival by 50%
+                    gameState.approvalByPol.republican += 20;
+                    gameState.approvalByPol.democrat -= 10;
+                    gameState.happinessByRace.hispanic -= 10;
+                },
+                enacted: false
+            },
+            {
+                name: 'Amnesty Program',
+                cost: 100,
+                effect: function() {
+                    gameState.undocumentedPopulation = 0;
+                    gameState.approvalByPol.democrat += 20;
+                    gameState.approvalByPol.republican -= 10;
+                    gameState.happinessByRace.hispanic += 10;
+                    // Clear undoc demographics
+                    Object.keys(gameState.undocDemographics.race).forEach(key => gameState.undocDemographics.race[key] = 0);
+                    Object.keys(gameState.undocDemographics.age).forEach(key => gameState.undocDemographics.age[key] = 0);
+                    Object.keys(gameState.undocDemographics.political).forEach(key => gameState.undocDemographics.political[key] = 0);
+                },
+                enacted: false
+            }
+            // You can add more legislation here
+        ];
 
-  <!-- Menu -->
-  <div id="menu" class="centered">
-    <h2>Want to try again?</h2>
-    <button onclick="restart()">Try Again</button>
-  </div>
+        // Start the game loop
+        setInterval(updateGame, 1000);
 
-  <script>
-    function checkName() {
-      const first = document.getElementById("first").value.trim().toLowerCase();
-      const middle = document.getElementById("middle").value.trim().toLowerCase();
-      const last = document.getElementById("last").value.trim().toLowerCase();
+        // Toggle functions
+        function toggleUpgrades() {
+            let upgrades = document.getElementById('upgrades-section');
+            upgrades.style.display = upgrades.style.display === 'none' || upgrades.style.display === '' ? 'block' : 'none';
+        }
 
-      const isMatch =
-        first === "heather" && middle === "sharon" && last === "hammrich";
-      const videoFile = isMatch ? "yes.mp4" : "no.mp4";
+        function toggleDemographics() {
+            let section = document.getElementById('demographics-section');
+            section.style.display = section.style.display === 'none' || section.style.display === '' ? 'block' : 'none';
+            if (section.style.display === 'block') updateDemographics();
+        }
 
-      // Hide form
-      document.getElementById("formContainer").style.display = "none";
+        function toggleLegislation() {
+            let section = document.getElementById('legislation-section');
+            section.style.display = section.style.display === 'none' || section.style.display === '' ? 'block' : 'none';
+            if (section.style.display === 'block') updateLegislation();
+        }
 
-      // Load and show video
-      const video = document.getElementById("videoPlayer");
-      const source = document.getElementById("videoSource");
-      source.src = videoFile;
-      video.load();
-      document.getElementById("videoContainer").style.display = "flex";
+        function toggleEnforcement() {
+            launchRaid();
+        }
 
-      // When video ends, show menu
-      video.onended = () => {
-        document.getElementById("videoContainer").style.display = "none";
-        document.getElementById("menu").style.display = "flex";
-      };
-    }
+        // Function to gather resources
+        function gatherResource(type) {
+            if (type === 'food') {
+                gameState.resources.food += 10;
+                if (Math.random() < 0.5) gameState.resources.skins += 1;
+            } else if (type === 'wood') {
+                gameState.resources.wood += 10;
+            } else if (type === 'stone') {
+                gameState.resources.stone += 10;
+            }
+        }
 
-    function restart() {
-      document.getElementById("menu").style.display = "none";
-      document.getElementById("formContainer").style.display = "flex";
+        // Hire worker
+        function hireWorker(type) {
+            let cost = type === 'ICEAgent' ? 50 : 20;
+            if (gameState.resources.food >= cost && gameState.population < gameState.maxPopulation) {
+                gameState.resources.food -= cost;
+                gameState.workers[type] += 1;
+                gameState.population += 1;
+                // Add to demographics
+                let races = ['white', 'black', 'hispanic', 'asian', 'other'];
+                let randomRace = races[Math.floor(Math.random() * races.length)];
+                gameState.demographics.race[randomRace] += 1;
+                let ages = ['0-17', '18-34', '35-54', '55-64', '65+'];
+                let randomAge = ages[Math.floor(Math.random() * ages.length)];
+                gameState.demographics.age[randomAge] += 1;
+                let pols = ['republican', 'democrat', 'independent'];
+                let randomPol = pols[Math.floor(Math.random() * pols.length)];
+                gameState.demographics.political[randomPol] += 1;
+            }
+        }
 
-      // Reset fields
-      document.getElementById("first").value = "";
-      document.getElementById("middle").value = "";
-      document.getElementById("last").value = "";
-    }
-  </script>
+        // Build building
+        function build(type) {
+            if (type === 'tent' && gameState.resources.wood >= 5 && gameState.resources.skins >= 5) {
+                gameState.resources.wood -= 5;
+                gameState.resources.skins -= 5;
+                gameState.buildings.tent += 1;
+                let popAdd = 2;
+                if (gameState.upgrades.tentReinforcement) popAdd += 1;
+                if (gameState.upgrades.woodenHouses) popAdd += 2;
+                if (gameState.upgrades.stoneHouses) popAdd += 3;
+                gameState.maxPopulation += popAdd;
+            }
+        }
+
+        // Buy upgrade
+        function buyUpgrade(type) {
+            let cost;
+            let resourceType;
+            switch (type) {
+                case 'domestication':
+                    cost = 20;
+                    resourceType = 'leather';
+                    break;
+                case 'farmingTools':
+                    cost = 50;
+                    resourceType = 'wood';
+                    break;
+                case 'irrigationSystem':
+                    cost = 100;
+                    resourceType = 'stone';
+                    break;
+                case 'cropRotation':
+                    cost = 50;
+                    resourceType = 'leather';
+                    break;
+                case 'axesUpgrade':
+                    cost = 50;
+                    resourceType = 'stone';
+                    break;
+                case 'sawUpgrade':
+                    cost = 100;
+                    resourceType = 'wood';
+                    break;
+                case 'forestryManagement':
+                    cost = 50;
+                    resourceType = 'leather';
+                    break;
+                case 'pickaxeUpgrade':
+                    cost = 50;
+                    resourceType = 'wood';
+                    break;
+                case 'drillingTools':
+                    cost = 100;
+                    resourceType = 'stone';
+                    break;
+                case 'miningSafety':
+                    cost = 50;
+                    resourceType = 'leather';
+                    break;
+                case 'tentReinforcement':
+                    cost = 20;
+                    resourceType = 'skins';
+                    break;
+                case 'woodenHouses':
+                    cost = 200;
+                    resourceType = 'wood';
+                    break;
+                case 'stoneHouses':
+                    cost = 300;
+                    resourceType = 'stone';
+                    break;
+                case 'iceTraining':
+                    cost = 100;
+                    resourceType = 'food';
+                    break;
+                case 'iceEquipment':
+                    cost = 200;
+                    resourceType = 'stone';
+                    break;
+                case 'borderWatch':
+                    cost = 100;
+                    resourceType = 'wood';
+                    break;
+                case 'communityCenters':
+                    cost = 100;
+                    resourceType = 'stone';
+                    break;
+                case 'educationSystem':
+                    cost = 200;
+                    resourceType = 'food';
+                    break;
+                case 'healthcare':
+                    cost = 300;
+                    resourceType = 'food';
+                    break;
+                case 'tradeRoutes':
+                    cost = 200;
+                    resourceType = 'wood';
+                    break;
+                case 'borderWall':
+                    cost = 500;
+                    resourceType = 'stone';
+                    break;
+                case 'integrationProgram':
+                    cost = 300;
+                    resourceType = 'food';
+                    break;
+                case 'surveillanceTech':
+                    cost = 200;
+                    resourceType = 'wood';
+                    break;
+                case 'culturalFestival':
+                    cost = 100;
+                    resourceType = 'leather';
+                    break;
+                case 'laborReform':
+                    cost = 400;
+                    resourceType = 'food';
+                    break;
+                default:
+                    return;
+            }
+            if (gameState.resources[resourceType] >= cost && !gameState.upgrades[type]) {
+                gameState.resources[resourceType] -= cost;
+                gameState.upgrades[type] = true;
+                document.getElementById(`upgrade-${type}`).style.display = 'none';
+                // Apply retroactive effects
+                if (type === 'tentReinforcement') {
+                    gameState.maxPopulation += gameState.buildings.tent * 1;
+                } else if (type === 'woodenHouses') {
+                    gameState.maxPopulation += gameState.buildings.tent * 2;
+                } else if (type === 'stoneHouses') {
+                    gameState.maxPopulation += gameState.buildings.tent * 3;
+                }
+                // Apply immediate side effects
+                if (type === 'domestication') {
+                    Object.keys(gameState.happinessByAge).forEach(key => gameState.happinessByAge[key] += 5);
+                } else if (type === 'farmingTools') {
+                    gameState.community += 5;
+                } else if (type === 'irrigationSystem') {
+                    gameState.approvalByPol.independent -= 5;
+                } else if (type === 'cropRotation') {
+                    gameState.happiness += 5;
+                    gameState.happinessByAge['0-17'] += 5;
+                } else if (type === 'axesUpgrade') {
+                    gameState.community -= 5;
+                } else if (type === 'sawUpgrade') {
+                    gameState.approvalByPol.republican += 5;
+                } else if (type === 'forestryManagement') {
+                    gameState.community += 5;
+                    gameState.happinessByRace.asian += 10;
+                } else if (type === 'pickaxeUpgrade') {
+                    gameState.happinessByAge['65+'] -= 5;
+                } else if (type === 'drillingTools') {
+                    gameState.approvalByPol.democrat += 5;
+                } else if (type === 'miningSafety') {
+                    gameState.happiness += 5;
+                    gameState.community += 10;
+                } else if (type === 'tentReinforcement') {
+                    gameState.happinessByRace.hispanic += 5;
+                } else if (type === 'woodenHouses') {
+                    gameState.approvalByPol.independent -= 5;
+                } else if (type === 'stoneHouses') {
+                    gameState.happinessByRace.black += 10;
+                } else if (type === 'iceTraining') {
+                    gameState.happinessByPol.democrat -= 10;
+                } else if (type === 'iceEquipment') {
+                    gameState.approvalByPol.republican += 5;
+                } else if (type === 'borderWatch') {
+                    gameState.community -= 5;
+                } else if (type === 'communityCenters') {
+                    gameState.happiness += 10;
+                    gameState.community += 10;
+                    gameState.approvalByPol.independent += 10;
+                } else if (type === 'educationSystem') {
+                    gameState.happinessByAge['18-34'] += 15;
+                } else if (type === 'healthcare') {
+                    gameState.happiness += 15;
+                    gameState.approvalByPol.democrat += 10;
+                } else if (type === 'tradeRoutes') {
+                    gameState.community += 5;
+                    gameState.happinessByPol.republican -= 5;
+                } else if (type === 'borderWall') {
+                    gameState.borderStrength += 0.5;
+                    gameState.approvalByPol.republican += 10;
+                    gameState.happinessByRace.hispanic -= 10;
+                } else if (type === 'integrationProgram') {
+                    // Effect in loop: reduce undocumented over time
+                    gameState.community += 10;
+                    gameState.happinessByPol.democrat += 5;
+                } else if (type === 'surveillanceTech') {
+                    gameState.happinessByPol.independent -= 10;
+                } else if (type === 'culturalFestival') {
+                    Object.keys(gameState.happinessByRace).forEach(key => gameState.happinessByRace[key] += 10);
+                    Object.keys(gameState.approvalByPol).forEach(key => gameState.approvalByPol[key] += 5);
+                } else if (type === 'laborReform') {
+                    gameState.happinessByAge['55-64'] -= 5;
+                }
+            }
+        }
+
+        // Bury bodies
+        function buryBodies() {
+            if (gameState.resources.wood >= 5 && gameState.resources.bodies > 0) {
+                gameState.resources.wood -= 5;
+                gameState.resources.bodies -= 1;
+                gameState.happiness += 5;
+            }
+        }
+
+        // Launch raid
+        function launchRaid() {
+            if (gameState.workers.ICEAgent === 0 || gameState.raidCooldown > 0) return;
+            gameState.raidCooldown = 30;
+            let baseSuccess = 0.6;
+            let basePartial = 0.3;
+            let baseFailure = 0.1;
+            if (gameState.upgrades.iceTraining) {
+                baseSuccess += 0.1;
+                basePartial -= 0.1;
+            }
+            if (gameState.upgrades.iceEquipment) {
+                baseFailure -= 0.05;
+                baseSuccess += 0.05;
+            }
+            if (gameState.upgrades.surveillanceTech) {
+                baseSuccess += 0.2;
+                baseFailure -= 0.1;
+                basePartial -= 0.1;
+            }
+            let outcome = Math.random();
+            let message = '';
+            if (outcome < baseSuccess) {
+                message = 'Success! All undocumented immigrants removed.';
+                gameState.undocumentedPopulation = 0;
+                gameState.approval += 10;
+                // Clear undoc demographics
+                Object.keys(gameState.undocDemographics.race).forEach(key => gameState.undocDemographics.race[key] = 0);
+                Object.keys(gameState.undocDemographics.age).forEach(key => gameState.undocDemographics.age[key] = 0);
+                Object.keys(gameState.undocDemographics.political).forEach(key => gameState.undocDemographics.political[key] = 0);
+            } else if (outcome < baseSuccess + basePartial) {
+                message = 'Partial success: Half of undocumented immigrants removed.';
+                let removed = Math.floor(gameState.undocumentedPopulation / 2);
+                gameState.undocumentedPopulation -= removed;
+                // Proportionally remove from demographics
+                let totalUndoc = gameState.undocumentedPopulation + removed;
+                Object.keys(gameState.undocDemographics.race).forEach(key => gameState.undocDemographics.race[key] = Math.floor(gameState.undocDemographics.race[key] * (gameState.undocumentedPopulation / totalUndoc)));
+                Object.keys(gameState.undocDemographics.age).forEach(key => gameState.undocDemographics.age[key] = Math.floor(gameState.undocDemographics.age[key] * (gameState.undocumentedPopulation / totalUndoc)));
+                Object.keys(gameState.undocDemographics.political).forEach(key => gameState.undocDemographics.political[key] = Math.floor(gameState.undocDemographics.political[key] * (gameState.undocumentedPopulation / totalUndoc)));
+            } else {
+                message = 'Failure: No immigrants removed.';
+                gameState.happiness -= 10;
+                if (Math.random() < 0.3) {
+                    gameState.workers.ICEAgent -= 1;
+                    gameState.population -= 1;
+                    gameState.resources.bodies += 1;
+                    message += ' Lost an ICE agent.';
+                }
+            }
+            document.getElementById('raidAlert').innerHTML = 'Raid Outcome: ' + message;
+            document.getElementById('raidAlert').style.display = 'block';
+            setTimeout(() => document.getElementById('raidAlert').style.display = 'none', 5000);
+        }
+
+        // Update demographics UI
+        function updateDemographics() {
+            let content = '<h3>Citizen Demographics</h3>';
+            content += '<table><tr><th>Race</th><th>Count</th></tr>';
+            for (let race in gameState.demographics.race) {
+                content += `<tr><td>${race}</td><td>${gameState.demographics.race[race]}</td></tr>`;
+            }
+            content += '</table>';
+            content += '<table><tr><th>Age</th><th>Count</th></tr>';
+            for (let age in gameState.demographics.age) {
+                content += `<tr><td>${age}</td><td>${gameState.demographics.age[age]}</td></tr>`;
+            }
+            content += '</table>';
+            content += '<table><tr><th>Political</th><th>Count</th></tr>';
+            for (let pol in gameState.demographics.political) {
+                content += `<tr><td>${pol}</td><td>${gameState.demographics.political[pol]}</td></tr>`;
+            }
+            content += '</table>';
+            content += '<h3>Undocumented Demographics</h3>';
+            content += '<table><tr><th>Race</th><th>Count</th></tr>';
+            for (let race in gameState.undocDemographics.race) {
+                content += `<tr><td>${race}</td><td>${gameState.undocDemographics.race[race]}</td></tr>`;
+            }
+            content += '</table>';
+            content += '<table><tr><th>Age</th><th>Count</th></tr>';
+            for (let age in gameState.undocDemographics.age) {
+                content += `<tr><td>${age}</td><td>${gameState.undocDemographics.age[age]}</td></tr>`;
+            }
+            content += '</table>';
+            content += '<table><tr><th>Political</th><th>Count</th></tr>';
+            for (let pol in gameState.undocDemographics.political) {
+                content += `<tr><td>${pol}</td><td>${gameState.undocDemographics.political[pol]}</td></tr>`;
+            }
+            content += '</table>';
+            document.getElementById('demographics-content').innerHTML = content;
+        }
+
+        // Update legislation UI
+        function updateLegislation() {
+            let list = document.getElementById('legislation-list');
+            list.innerHTML = '';
+            legislations.forEach((leg, index) => {
+                if (!leg.enacted) {
+                    let btn = document.createElement('button');
+                    btn.innerText = `${leg.name} (${leg.cost} Food)`;
+                    btn.onclick = () => {
+                        if (gameState.resources.food >= leg.cost) {
+                            gameState.resources.food -= leg.cost;
+                            leg.effect();
+                            leg.enacted = true;
+                            updateLegislation();
+                        }
+                    };
+                    list.appendChild(btn);
+                }
+            });
+        }
+
+        // Main update function
+        function updateGame() {
+            // Production multiplier
+            let productionMultiplier = gameState.upgrades.educationSystem ? 1.1 : 1.0;
+            if (gameState.upgrades.laborReform) productionMultiplier += 0.2;
+
+            // Calculate rates
+            let farmerRate = gameState.upgrades.domestication ? 1.0 : 0.5;
+            if (gameState.upgrades.farmingTools) farmerRate += 0.5;
+            if (gameState.upgrades.irrigationSystem) farmerRate += 1.0;
+            if (gameState.upgrades.cropRotation) farmerRate += 0.5;
+            let foodProduction = gameState.workers.farmer * farmerRate * productionMultiplier;
+            let skinsProduction = gameState.workers.farmer * 0.1 * productionMultiplier;
+
+            let woodcutterRate = 1.0;
+            if (gameState.upgrades.axesUpgrade) woodcutterRate += 0.5;
+            if (gameState.upgrades.sawUpgrade) woodcutterRate += 1.0;
+            if (gameState.upgrades.forestryManagement) woodcutterRate += 0.5;
+            let woodProduction = gameState.workers.woodcutter * woodcutterRate * productionMultiplier;
+
+            let minerRate = 1.0;
+            if (gameState.upgrades.pickaxeUpgrade) minerRate += 0.5;
+            if (gameState.upgrades.drillingTools) minerRate += 1.0;
+            if (gameState.upgrades.miningSafety) minerRate += 0.5;
+            let stoneProduction = gameState.workers.miner * minerRate * productionMultiplier;
+
+            // Add production
+            gameState.resources.food += foodProduction;
+            gameState.resources.skins += skinsProduction;
+            gameState.resources.wood += woodProduction;
+            gameState.resources.stone += stoneProduction;
+
+            // Consumption
+            let consumption = (gameState.population * 0.2) + (gameState.undocumentedPopulation * 0.1);
+            gameState.resources.food -= consumption;
+
+            // Starvation check
+            if (gameState.resources.food < 0) {
+                gameState.resources.food = 0;
+                let risk = gameState.upgrades.healthcare ? 0.05 : 0.1;
+                if (Math.random() < risk) {
+                    if (gameState.population > 0) {
+                        let workerTypes = ['farmer', 'woodcutter', 'miner', 'ICEAgent'].filter(w => gameState.workers[w] > 0);
+                        if (workerTypes.length > 0) {
+                            let type = workerTypes[Math.floor(Math.random() * workerTypes.length)];
+                            gameState.workers[type] -= 1;
+                            gameState.population -= 1;
+                            gameState.resources.bodies += 1;
+                            gameState.happiness -= 10;
+                            document.getElementById('starvationAlert').style.display = 'block';
+                            setTimeout(() => document.getElementById('starvationAlert').style.display = 'none', 5000);
+                            // Adjust demographics for lost worker
+                            // Simplification: not removing specific demographic entry
+                        }
+                    }
+                }
+            }
+
+            // Immigrant arrival
+            let arrivalChance = 0.05 * (1 - gameState.borderStrength);
+            if (gameState.upgrades.borderWatch) arrivalChance *= 0.8;
+            if (Math.random() < arrivalChance) {
+                gameState.undocumentedPopulation += 1;
+                // Add to undoc demographics, skewed
+                let races = ['white', 'black', 'hispanic', 'asian', 'other'];
+                let raceIndex = Math.floor(Math.random() * races.length);
+                if (Math.random() < 0.5) raceIndex = 2; // skew to hispanic
+                gameState.undocDemographics.race[races[raceIndex]] += 1;
+                let ages = ['0-17', '18-34', '35-54', '55-64', '65+'];
+                let ageIndex = Math.floor(Math.random() * ages.length);
+                if (Math.random() < 0.6) ageIndex = 1; // skew to 18-34
+                gameState.undocDemographics.age[ages[ageIndex]] += 1;
+                let pols = ['republican', 'democrat', 'independent'];
+                let polIndex = Math.floor(Math.random() * pols.length);
+                if (Math.random() < 0.4) polIndex = 1; // skew to democrat
+                gameState.undocDemographics.political[pols[polIndex]] += 1;
+            }
+
+            // Integration program effect
+            if (gameState.upgrades.integrationProgram && gameState.undocumentedPopulation > 0 && Math.random() < 0.1) {
+                gameState.undocumentedPopulation -= 1;
+                gameState.population += 1;
+                // Move from undoc to doc demographics
+                // Simplification: add random to doc
+                let races = ['white', 'black', 'hispanic', 'asian', 'other'];
+                let randomRace = races[Math.floor(Math.random() * races.length)];
+                gameState.demographics.race[randomRace] += 1;
+                gameState.undocDemographics.race[randomRace] -= 1;
+                let ages = ['0-17', '18-34', '35-54', '55-64', '65+'];
+                let randomAge = ages[Math.floor(Math.random() * ages.length)];
+                gameState.demographics.age[randomAge] += 1;
+                gameState.undocDemographics.age[randomAge] -= 1;
+                let pols = ['republican', 'democrat', 'independent'];
+                let randomPol = pols[Math.floor(Math.random() * pols.length)];
+                gameState.demographics.political[randomPol] += 1;
+                gameState.undocDemographics.political[randomPol] -= 1;
+            }
+
+            // Trade routes extra resources
+            if (gameState.upgrades.tradeRoutes && Math.random() < 0.05) {
+                let extra = Math.floor(Math.random() * 20 + 10);
+                gameState.resources.food += extra;
+                gameState.resources.wood += extra / 2;
+                gameState.resources.stone += extra / 2;
+            }
+
+            // Bodies impact
+            gameState.happiness -= gameState.resources.bodies * 0.1;
+
+            // Immigrant impact
+            let immigrantImpact = gameState.undocumentedPopulation * 0.05;
+            gameState.happiness -= immigrantImpact;
+            gameState.approval -= immigrantImpact;
+            gameState.community -= immigrantImpact;
+
+            // Calculate overall approval and happiness
+            gameState.approval = Object.values(gameState.approvalByPol).reduce((a, b) => a + b, 0) / 3;
+            gameState.happiness = (
+                Object.values(gameState.happinessByPol).reduce((a, b) => a + b, 0) +
+                Object.values(gameState.happinessByRace).reduce((a, b) => a + b, 0) +
+                Object.values(gameState.happinessByAge).reduce((a, b) => a + b, 0)
+            ) / 13;
+
+            // Raid cooldown
+            if (gameState.raidCooldown > 0) gameState.raidCooldown -= 1;
+
+            // Show upgrades if conditions met
+            if (gameState.resources.leather >= 20 && !gameState.upgrades.domestication) document.getElementById('upgrade-domestication').style.display = 'block';
+            if (gameState.resources.wood >= 50 && !gameState.upgrades.farmingTools) document.getElementById('upgrade-farmingTools').style.display = 'block';
+            if (gameState.resources.stone >= 100 && !gameState.upgrades.irrigationSystem) document.getElementById('upgrade-irrigationSystem').style.display = 'block';
+            if (gameState.resources.leather >= 50 && !gameState.upgrades.cropRotation) document.getElementById('upgrade-cropRotation').style.display = 'block';
+            if (gameState.resources.stone >= 50 && !gameState.upgrades.axesUpgrade) document.getElementById('upgrade-axesUpgrade').style.display = 'block';
+            if (gameState.resources.wood >= 100 && !gameState.upgrades.sawUpgrade) document.getElementById('upgrade-sawUpgrade').style.display = 'block';
+            if (gameState.resources.leather >= 50 && !gameState.upgrades.forestryManagement) document.getElementById('upgrade-forestryManagement').style.display = 'block';
+            if (gameState.resources.wood >= 50 && !gameState.upgrades.pickaxeUpgrade) document.getElementById('upgrade-pickaxeUpgrade').style.display = 'block';
+            if (gameState.resources.stone >= 100 && !gameState.upgrades.drillingTools) document.getElementById('upgrade-drillingTools').style.display = 'block';
+            if (gameState.resources.leather >= 50 && !gameState.upgrades.miningSafety) document.getElementById('upgrade-miningSafety').style.display = 'block';
+            if (gameState.resources.skins >= 20 && !gameState.upgrades.tentReinforcement) document.getElementById('upgrade-tentReinforcement').style.display = 'block';
+            if (gameState.resources.wood >= 200 && !gameState.upgrades.woodenHouses) document.getElementById('upgrade-woodenHouses').style.display = 'block';
+            if (gameState.resources.stone >= 300 && !gameState.upgrades.stoneHouses) document.getElementById('upgrade-stoneHouses').style.display = 'block';
+            if (gameState.resources.food >= 100 && !gameState.upgrades.iceTraining) document.getElementById('upgrade-iceTraining').style.display = 'block';
+            if (gameState.resources.stone >= 200 && !gameState.upgrades.iceEquipment) document.getElementById('upgrade-iceEquipment').style.display = 'block';
+            if (gameState.resources.wood >= 100 && !gameState.upgrades.borderWatch) document.getElementById('upgrade-borderWatch').style.display = 'block';
+            if (gameState.resources.stone >= 100 && !gameState.upgrades.communityCenters) document.getElementById('upgrade-communityCenters').style.display = 'block';
+            if (gameState.resources.food >= 200 && !gameState.upgrades.educationSystem) document.getElementById('upgrade-educationSystem').style.display = 'block';
+            if (gameState.resources.food >= 300 && !gameState.upgrades.healthcare) document.getElementById('upgrade-healthcare').style.display = 'block';
+            if (gameState.resources.wood >= 200 && !gameState.upgrades.tradeRoutes) document.getElementById('upgrade-tradeRoutes').style.display = 'block';
+            if (gameState.resources.stone >= 500 && !gameState.upgrades.borderWall) document.getElementById('upgrade-borderWall').style.display = 'block';
+            if (gameState.resources.food >= 300 && !gameState.upgrades.integrationProgram) document.getElementById('upgrade-integrationProgram').style.display = 'block';
+            if (gameState.resources.wood >= 200 && !gameState.upgrades.surveillanceTech) document.getElementById('upgrade-surveillanceTech').style.display = 'block';
+            if (gameState.resources.leather >= 100 && !gameState.upgrades.culturalFestival) document.getElementById('upgrade-culturalFestival').style.display = 'block';
+            if (gameState.resources.food >= 400 && !gameState.upgrades.laborReform) document.getElementById('upgrade-laborReform').style.display = 'block';
+
+            // Update UI
+            updateUI();
+        }
+
+        // Update UI function
+        function updateUI() {
+            document.getElementById('food').innerHTML = Math.floor(gameState.resources.food);
+            document.getElementById('wood').innerHTML = Math.floor(gameState.resources.wood);
+            document.getElementById('stone').innerHTML = Math.floor(gameState.resources.stone);
+            document.getElementById('skins').innerHTML = Math.floor(gameState.resources.skins);
+            document.getElementById('leather').innerHTML = Math.floor(gameState.resources.leather);
+            document.getElementById('bodies').innerHTML = gameState.resources.bodies;
+            document.getElementById('undocumentedImmigrants').innerHTML = gameState.undocumentedPopulation;
+            document.getElementById('happiness').innerHTML = Math.floor(gameState.happiness);
+            document.getElementById('community').innerHTML = Math.floor(gameState.community);
+            document.getElementById('approval').innerHTML = Math.floor(gameState.approval);
+            document.getElementById('population').innerHTML = gameState.population;
+            document.getElementById('maxPopulation').innerHTML = gameState.maxPopulation;
+            document.getElementById('farmers').innerHTML = gameState.workers.farmer;
+            document.getElementById('woodcutters').innerHTML = gameState.workers.woodcutter;
+            document.getElementById('miners').innerHTML = gameState.workers.miner;
+            document.getElementById('iceAgents').innerHTML = gameState.workers.ICEAgent;
+            document.getElementById('tents').innerHTML = gameState.buildings.tent;
+
+            // Food rate
+            let farmerRate = gameState.upgrades.domestication ? 1.0 : 0.5;
+            if (gameState.upgrades.farmingTools) farmerRate += 0.5;
+            if (gameState.upgrades.irrigationSystem) farmerRate += 1.0;
+            if (gameState.upgrades.cropRotation) farmerRate += 0.5;
+            let productionMultiplier = gameState.upgrades.educationSystem ? 1.1 : 1.0;
+            if (gameState.upgrades.laborReform) productionMultiplier += 0.2;
+            let foodProduction = gameState.workers.farmer * farmerRate * productionMultiplier;
+            let consumption = (gameState.population * 0.2) + (gameState.undocumentedPopulation * 0.1);
+            let netRate = foodProduction - consumption;
+            document.getElementById('foodRate').innerHTML = netRate.toFixed(1);
+        }
+    </script>
 </body>
 </html>
